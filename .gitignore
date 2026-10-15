@@ -1,0 +1,27 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Heavy datasets and local logs
+*.csv
+*.pcap
+*.log
+!data/demo_train_dataset.csv
+!data/demo_unseen_traffic.csv
+!data/real_ciciot_dataset.csv
+
+# Models (keep metadata, ignore massive weights if downloaded later)
+# models/*.joblib
