@@ -5,24 +5,22 @@
 
 ---
 
-## 1. The Three Dataset Files: Roles, Row Counts & Origins
+## 1. Primary Benchmark Dataset: Origins, Composition & Integrity
 
-The framework utilizes three distinct dataset files located in [`data/`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/data). Each dataset has a distinct origin and purpose in the machine learning lifecycle:
+The framework operates exclusively on genuine, physical IoT telemetry located in [`data/`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/data):
 
 ```
 AI defense/data/
-├── real_ciciot_dataset.csv     (50,000 flows)  <-- Real Physical Testbed Benchmark
-├── demo_train_dataset.csv       (3,000 flows)  <-- Lightweight Synthetic Training Set
-└── demo_unseen_traffic.csv        (500 flows)  <-- Live Simulated Incoming Traffic Stream
+└── real_ciciot_dataset.csv     (50,000 flows)  <-- Real Physical Testbed Benchmark (UNB CIC-IoT2023)
 ```
 
-### Detailed Dataset Breakdown
+### Dataset Architecture & Composition
 
 | Dataset File | Total Rows | Normal Flows | Attack Flows | Origin & Source | Role in the System |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **`real_ciciot_dataset.csv`** | **50,000** | 25,000 (50.0%) | 25,000 (50.0%) | **Physical Testbed:** Extracted from the Canadian Institute for Cybersecurity (**UNB CIC-IoT2023**) benchmark captured from 105 real physical IoT devices. | **Primary Academic Benchmark:** Used for formal model training, hyperparameter tuning, and thesis evaluation. |
-| **`demo_train_dataset.csv`** | **3,000** | 2,100 (70.0%) | 900 (30.0%) | **Local Generator:** Built synthetically by [`src/generate_sample_data.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/generate_sample_data.py) using random seed `42`. | **Quick Pipeline Demo:** Allows verification that the training code executes end-to-end without requiring large downloads. |
-| **`demo_unseen_traffic.csv`** | **500** | 238 (47.6%) | 262 (52.4%) | **Local Generator:** Built synthetically by [`src/generate_sample_data.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/generate_sample_data.py) using random seed `99`. | **Live Stream Simulation:** Simulates brand new, unseen traffic hitting the network to evaluate real-time inference speed and alert generation. |
+| **`real_ciciot_dataset.csv`** | **50,000** | 25,000 (50.0%) | 25,000 (50.0%) | **Physical Testbed:** Extracted from the Canadian Institute for Cybersecurity (**UNB CIC-IoT2023**) benchmark captured from 105 real physical IoT devices. | **Primary Academic Benchmark:** Used for formal model training, 80/20 stratified holdout validation, hyperparameter tuning, and thesis evaluation. |
+
+> **Research Integrity Notice:** Artificial / synthetic demo files were intentionally removed from the repository to guarantee scientific validity and prevent accidental training on synthetic random distributions. All models, evaluation metrics, and real-time detection tests operate 100% on real physical network traffic.
 
 ---
 

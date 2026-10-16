@@ -36,15 +36,15 @@ This repository houses **Layer 2** of a comprehensive three-tier cybersecurity f
 
 ---
 
-## 2. Dataset Architecture: The Three Datasets
+## 2. Dataset Architecture: Real Physical Benchmark
 
-The repository maintains three datasets in [`data/`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/data) for distinct stages of development, verification, and academic evaluation:
+The framework operates on physical IoT telemetry extracted from the University of New Brunswick **CIC-IoT2023** benchmark:
 
 | Dataset File | Records | Normal Flows | Attack Flows | Source / Origin | Purpose |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **`real_ciciot_dataset.csv`** | **50,000** | 25,000 (50.0%) | 25,000 (50.0%) | **Physical Testbed:** Official UNB CIC-IoT2023 benchmark recorded from 105 real physical IoT devices. | **Primary Academic Benchmark:** Ground-truth training and thesis performance evaluation. |
-| **`demo_train_dataset.csv`** | **3,000** | 2,100 (70.0%) | 900 (30.0%) | **Local Generator:** Synthetic data from `src/generate_sample_data.py` (seed 42). | **Rapid Pipeline Demo:** Tests training code execution in under 1 second. |
-| **`demo_unseen_traffic.csv`** | **500** | 238 (47.6%) | 262 (52.4%) | **Local Generator:** Synthetic data from `src/generate_sample_data.py` (seed 99). | **Live Stream Simulation:** Simulates brand new, unseen traffic to evaluate real-time alert isolation. |
+| **`real_ciciot_dataset.csv`** | **50,000** | 25,000 (50.0%) | 25,000 (50.0%) | **Physical Testbed:** Official UNB CIC-IoT2023 benchmark recorded from 105 real physical IoT devices. | **Primary Academic Benchmark:** Ground-truth training, cross-validation, and thesis performance evaluation. |
+
+> **Note on Data Authenticity:** Synthetic demo files were removed to ensure 100% scientific validity and prevent accidental training on artificial random distributions. All training, validation, and detection operate exclusively on real physical IoT network traffic.
 
 ---
 
@@ -53,10 +53,8 @@ The repository maintains three datasets in [`data/`](file:///C:/Users/U-ser/OneD
 ```
 AI defense/
 │
-├── data/                                    # Training datasets & incoming traffic streams
-│   ├── real_ciciot_dataset.csv              # 50,000 real physical testbed records (Benchmark)
-│   ├── demo_train_dataset.csv               # 3,000 synthetic training records (Demo)
-│   └── demo_unseen_traffic.csv              # 500 unseen simulated incoming records (Test)
+├── data/                                    # Real network traffic datasets
+│   └── real_ciciot_dataset.csv              # 50,000 real physical testbed records (Benchmark)
 │
 ├── models/                                  # Trained AI model weights & evaluation metadata
 │   ├── iot_anomaly_detector.joblib          # Serialized pipeline (Scaler + Trained Model)
@@ -71,13 +69,13 @@ AI defense/
 │   ├── preprocess.py                        # Imputation, label encoding, Z-score scaling
 │   ├── train.py                             # HistGradientBoosting / Random Forest training pipeline
 │   ├── detect.py                            # Real-time probability scoring & 4-tier risk triage
-│   └── generate_sample_data.py              # Synthetic CIC-IoT2023 data generator
+│   ├── check_dataset.py                     # Dataset integrity verification utility
+│   └── generate_sample_data.py              # Synthetic generator (kept for standalone utility)
 │
 ├── test_interactive.py                      # Interactive attack scenario simulator CLI
 ├── main.py                                  # Unified Command-Line Interface (CLI)
 ├── real_data.py                             # Extractor script for 50,000 real CIC-IoT benchmark
 ├── AI_TRAINING_AND_DETECTION_REPORT.md      # Comprehensive research & technical report
-├── PROGRESS_REPORT.md                       # Phase 1 milestone progress report
 ├── requirements.txt                         # Python dependencies
 └── README.md                                # Project documentation
 ```
@@ -138,18 +136,13 @@ Simulate specific IoT behaviors and cyberattacks one by one:
 
 ---
 
-### Method 2: Batch Inspection on Real & Unseen Traffic
+### Method 2: Batch Inspection on Real Network Traffic
 
 **Inspect 50,000 Real Physical Testbed Records:**
 ```powershell
 .\.venv\Scripts\python.exe main.py --detect --input "data/real_ciciot_dataset.csv"
 ```
-
-**Inspect 500 Unseen Simulated Records:**
-```powershell
-.\.venv\Scripts\python.exe main.py --detect --input "data/demo_unseen_traffic.csv"
-```
-*(If no `--input` is provided, `main.py --detect` defaults to `data/demo_unseen_traffic.csv` for fast testing).*
+*(If no `--input` is provided, `main.py --detect` automatically defaults to `data/real_ciciot_dataset.csv`).*
 
 ---
 
@@ -159,11 +152,12 @@ To train the Histogram Gradient Boosting model on the 50,000-record benchmark:
 ```powershell
 .\.venv\Scripts\python.exe main.py --train --data "data/real_ciciot_dataset.csv" --model-type hist_gb
 ```
+*(If no `--data` is provided, `main.py --train` automatically defaults to `data/real_ciciot_dataset.csv`).*
 
 ---
 
-### Method 4: Automated 1-Click Demo
-Generates synthetic data, trains a test model, and executes detection end-to-end:
+### Method 4: Automated 1-Click Verification
+Trains on a 10,000-flow sample of the real CIC-IoT dataset and executes threat detection end-to-end:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py --demo

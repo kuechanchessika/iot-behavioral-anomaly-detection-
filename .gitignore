@@ -19,8 +19,6 @@ Thumbs.db
 *.csv
 *.pcap
 *.log
-!data/demo_train_dataset.csv
-!data/demo_unseen_traffic.csv
 !data/real_ciciot_dataset.csv
 
 # Models (keep metadata, ignore massive weights if downloaded later)
