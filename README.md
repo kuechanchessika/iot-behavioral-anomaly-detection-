@@ -1,7 +1,6 @@
 # Layer 2: AI-Powered IoT Behavioral Anomaly Detection
 
-**Research Project:** A Cross-Protocol Anomaly Detection Framework for Connected IoT Infrastructure: Mitigating Cyber-Physical Attacks on Smart Traffic and Municipal Systems  
-**Institution:** Concordia University  
+**Research Project:** A Cross-Protocol Anomaly Detection Framework for Connected IoT Infrastructure: Mitigating Cyber-Physical Attacks on Smart Traffic and Municipal Systems    
 **Component:** Layer 2 (AI-Powered Behavioral Anomaly Detection Engine)  
 **Benchmark:** Canadian Institute for Cybersecurity (**UNB CIC-IoT2023**)  
 
