@@ -112,7 +112,6 @@ The mapping from raw numbers to actionable security decisions is distributed acr
   src/detect.py (Lines 120-125)          ▼                         ▼
   Quarantine Alert Export:       [ logs/alerts_<timestamp>.csv ]
 | **Explainable AI (XAI)** | [src/llm_analyst.py](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/llm_analyst.py) | 74–103, 336 | nalyze_and_report(alert) $\rightarrow$ 5-Part Forensic Threat Report |
-| **Progress Report (Week 5)** | [PROGRESS_REPORT.md](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/PROGRESS_REPORT.md) | All | XAI Empirical Evaluation, RQ Validation, NS-3 Testbed Roadmap |
 ```
 
 ### File 1: [`src/config.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/config.py)
@@ -191,4 +190,3 @@ if abnormal_count > 0:
 | **Severity Triage** | [`src/detect.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/detect.py) | 73–82 | `get_risk(score)` $\rightarrow$ `CRITICAL`, `HIGH`, `MEDIUM`, `NORMAL` |
 | **Quarantine Alert Export** | [`src/detect.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/detect.py) | 120–125 | `alerts.to_csv(LOGS_DIR / f"alerts_{timestamp}.csv")` |
 | **Explainable AI (XAI)** | [src/llm_analyst.py](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/llm_analyst.py) | 74–103, 336 | nalyze_and_report(alert) $\rightarrow$ 5-Part Forensic Threat Report |
-| **Progress Report (Week 5)** | [PROGRESS_REPORT.md](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/PROGRESS_REPORT.md) | All | XAI Empirical Evaluation, RQ Validation, NS-3 Testbed Roadmap |

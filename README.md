@@ -90,7 +90,6 @@ AI defense/
 ├── test_interactive.py                      # Interactive attack scenario simulator CLI
 ├── main.py                                  # Unified Command-Line Interface (CLI)
 ├── real_data.py                             # Extractor script for 50,000 real CIC-IoT benchmark
-├── PROGRESS_REPORT.md                       # Week 5 Progress Report (XAI & NS-3 Roadmap)
 ├── AI_TRAINING_AND_DETECTION_REPORT.md      # Comprehensive research & technical report
 ├── .env.example                             # LLM API keys configuration template
 ├── requirements.txt                         # Python dependencies
