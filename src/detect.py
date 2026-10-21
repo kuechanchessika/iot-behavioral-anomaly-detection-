@@ -10,6 +10,18 @@ import pandas as pd
 
 from src.config import ALERT_THRESHOLD, LOGS_DIR, MODEL_PATH
 from src.preprocess import clean_dataframe
+from src.llm_analyst import analyze_and_report
+
+# ── ANSI terminal colors ──────────────────────────────────
+class C:
+    RED     = "\033[91m"
+    GREEN   = "\033[92m"
+    YELLOW  = "\033[93m"
+    BLUE    = "\033[94m"
+    CYAN    = "\033[96m"
+    WHITE   = "\033[97m"
+    BOLD    = "\033[1m"
+    RESET   = "\033[0m"
 
 
 class IoTTrafficDetector:
@@ -94,17 +106,19 @@ class IoTTrafficDetector:
         threat_pct = (abnormal_count / total * 100) if total > 0 else 0
 
         print("\n" + "=" * 55)
-        print("          AUTOMATED TRAFFIC INSPECTION RESULTS")
+        print(f"{C.BOLD}{C.CYAN}          AUTOMATED TRAFFIC INSPECTION RESULTS{C.RESET}")
         print("=" * 55)
-        print(f" Total Network Flows Inspected : {total:,}")
-        print(f" Normal Traffic Flows Identified : {normal_count:,} ({100 - threat_pct:.1f}%)")
-        print(f" Abnormal Traffic (Threats)     : {abnormal_count:,} ({threat_pct:.1f}%)")
+        print(f" Total Network Flows Inspected : {C.WHITE}{C.BOLD}{total:,}{C.RESET}")
+        print(f" Normal Traffic Flows Identified : {C.GREEN}{normal_count:,} ({100 - threat_pct:.1f}%){C.RESET}")
+        print(f" Abnormal Traffic (Threats)     : {C.RED}{C.BOLD}{abnormal_count:,} ({threat_pct:.1f}%){C.RESET}")
         print("-" * 55)
-        print(" Breakdown by Risk Level:")
+        print(f" Breakdown by Risk Level:")
         risk_counts = results["risk_level"].value_counts().to_dict()
+        risk_colors = {"CRITICAL": C.RED, "HIGH": C.YELLOW, "MEDIUM": C.CYAN, "NORMAL": C.GREEN}
         for level in ["CRITICAL", "HIGH", "MEDIUM", "NORMAL"]:
             count = risk_counts.get(level, 0)
-            print(f"  - {level:<10}: {count:,}")
+            color = risk_colors.get(level, C.WHITE)
+            print(f"  - {color}{C.BOLD}{level:<10}{C.RESET}: {color}{count:,}{C.RESET}")
         print("=" * 55 + "\n")
 
         # Save audit logs
@@ -122,6 +136,40 @@ class IoTTrafficDetector:
                 alerts = combined[combined["is_abnormal"] == 1]
                 alerts.to_csv(alerts_csv, index=False)
                 print(f"[!] Threat alerts isolated and logged to: {alerts_csv}")
+
+                # Auto-trigger LLM analysis on top CRITICAL threats
+                critical_alerts = results[results["risk_level"] == "CRITICAL"]
+                if not critical_alerts.empty:
+                    top_threats = critical_alerts.nlargest(min(3, len(critical_alerts)), "anomaly_score")
+                    print(f"\n[*] Sending top {len(top_threats)} CRITICAL threat(s) to LLM analyst...")
+                    # Get laptop real IP for Option C
+                    import socket
+                    try:
+                        laptop_ip = socket.gethostbyname(socket.gethostname())
+                    except Exception:
+                        laptop_ip = "127.0.0.1"
+
+                    for idx, row in top_threats.iterrows():
+                        # Build alert dict from detection results + raw data
+                        raw_row = df_raw.iloc[idx] if idx < len(df_raw) else {}
+                        alert = {
+                            "src_ip"       : str(raw_row.get("src_ip", raw_row.get("Src IP", laptop_ip))),
+                            "dst_ip"       : str(raw_row.get("dst_ip", raw_row.get("Dst IP", "10.0.0.1 (Simulated IoT Gateway)"))),
+                            "protocol"     : str(raw_row.get("Protocol Type", raw_row.get("protocol", "TCP"))),
+                            "threat_score" : float(row["anomaly_score"]),
+                            "severity"     : row["risk_level"],
+                            "syn_count"    : int(raw_row.get("SYN Flag Cnt", raw_row.get("syn_count", 0))),
+                            "ack_count"    : int(raw_row.get("ACK Flag Cnt", raw_row.get("ack_count", 0))),
+                            "rst_count"    : int(raw_row.get("RST Flag Cnt", raw_row.get("rst_count", 0))),
+                            "urg_count"    : int(raw_row.get("URG Flag Cnt", raw_row.get("urg_count", 0))),
+                            "flow_duration": float(raw_row.get("flow_duration", raw_row.get("Flow Duration", 0))),
+                            "packet_rate"  : float(raw_row.get("Rate", raw_row.get("packet_rate", 0))),
+                            "flow_count"   : abnormal_count,
+                        }
+                        try:
+                            analyze_and_report(alert)
+                        except Exception as llm_err:
+                            print(f"[!] LLM analysis skipped for flow {idx}: {llm_err}")
 
         return results
 

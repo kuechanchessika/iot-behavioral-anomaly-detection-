@@ -84,7 +84,7 @@ flowchart TD
   * **Detection Rate / Recall:** $\frac{TP}{TP + FN} \approx 99.8\%$ (percentage of attacks caught)
   * **False Alarm Rate / FPR:** $\frac{FP}{FP + TN} \approx 0.1\%$ (percentage of normal traffic wrongly flagged)
   * **Precision:** $\frac{TP}{TP + FP} \approx 99.9\%$
-  * **ROC-AUC Score:** Area under the ROC curve ($\approx 0.9998$)
+  * **ROC-AUC Score:** Area under the ROC curve = **1.0000** (0.999998)
 
 ---
 
@@ -111,6 +111,8 @@ The mapping from raw numbers to actionable security decisions is distributed acr
                                          │                         │
   src/detect.py (Lines 120-125)          ▼                         ▼
   Quarantine Alert Export:       [ logs/alerts_<timestamp>.csv ]
+| **Explainable AI (XAI)** | [src/llm_analyst.py](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/llm_analyst.py) | 74–103, 336 | nalyze_and_report(alert) $\rightarrow$ 5-Part Forensic Threat Report |
+| **Progress Report (Week 5)** | [PROGRESS_REPORT.md](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/PROGRESS_REPORT.md) | All | XAI Empirical Evaluation, RQ Validation, NS-3 Testbed Roadmap |
 ```
 
 ### File 1: [`src/config.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/config.py)
@@ -188,3 +190,5 @@ if abnormal_count > 0:
 | **Probability Inference** | [`src/detect.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/detect.py) | 58 | $P = \frac{1}{1 + e^{-F(x)}}$ (`predict_proba`) |
 | **Severity Triage** | [`src/detect.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/detect.py) | 73–82 | `get_risk(score)` $\rightarrow$ `CRITICAL`, `HIGH`, `MEDIUM`, `NORMAL` |
 | **Quarantine Alert Export** | [`src/detect.py`](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/detect.py) | 120–125 | `alerts.to_csv(LOGS_DIR / f"alerts_{timestamp}.csv")` |
+| **Explainable AI (XAI)** | [src/llm_analyst.py](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/src/llm_analyst.py) | 74–103, 336 | nalyze_and_report(alert) $\rightarrow$ 5-Part Forensic Threat Report |
+| **Progress Report (Week 5)** | [PROGRESS_REPORT.md](file:///C:/Users/U-ser/OneDrive/Research%20Material%20Concordia/AI%20defense/PROGRESS_REPORT.md) | All | XAI Empirical Evaluation, RQ Validation, NS-3 Testbed Roadmap |

@@ -16,28 +16,32 @@ from src.train import train_iot_detector
 
 
 def run_demo():
-    """Run an automated end-to-end verification using the real CIC-IoT benchmark dataset."""
+    """Run an automated end-to-end demonstration."""
     print("\n" + "=" * 65)
     print("      IoT NETWORK INTRUSION DETECTION SYSTEM - END-TO-END DEMO")
     print("=" * 65)
 
-    real_data_path = DATA_DIR / "real_ciciot_dataset.csv"
-    if not real_data_path.exists():
-        print(f"[-] Error: Real benchmark dataset not found at '{real_data_path}'.")
-        return
+    # 1. Generate training sample
+    train_path = DATA_DIR / "demo_train_dataset.csv"
+    print("\n[Step 1/3] Generating synthetic training traffic (CIC-IoT2023 format)...")
+    generate_sample_iot_dataset(num_samples=3000, abnormal_ratio=0.30, output_path=train_path, random_state=42)
 
-    # 1. Train AI model on real dataset (fast verification sample)
-    print("\n[Step 1/2] Training AI model on real CIC-IoT2023 dataset (10,000 flows)...")
-    train_iot_detector(dataset_path=real_data_path, model_type="hist_gb", sample_size=10000)
+    # 2. Train AI model
+    print("\n[Step 2/3] Training AI model on training dataset...")
+    train_iot_detector(dataset_path=train_path, model_type="random_forest")
 
-    # 2. Run automated threat detection on real traffic
-    print("\n[Step 2/2] Running automated detection on real network traffic...")
+    # 3. Generate new unseen traffic stream for detection
+    test_stream_path = DATA_DIR / "demo_unseen_traffic.csv"
+    print("\n[Step 3/3] Generating unseen incoming network traffic stream...")
+    generate_sample_iot_dataset(num_samples=500, abnormal_ratio=0.40, output_path=test_stream_path, random_state=99)
+
+    # 4. Run automated threat detection
+    print("\n[Executing] Running automated detection on unseen traffic...")
     detector = IoTTrafficDetector(model_path=MODEL_PATH)
-    detector.detect_batch(traffic_data=real_data_path, save_report=True)
+    results = detector.detect_batch(traffic_data=test_stream_path, save_report=True)
 
-    print("\n[+] Verification completed successfully! All components verified on real data.")
+    print("\n[+] Demo completed successfully! All components verified.")
     print("=" * 65 + "\n")
-
 
 
 def main():
@@ -131,25 +135,21 @@ def main():
     if args.train:
         data_path = args.data
         if not data_path:
-            real_default = DATA_DIR / "real_ciciot_dataset.csv"
-            if real_default.exists():
-                data_path = str(real_default)
-                print(f"[*] No --data specified. Defaulting to real benchmark dataset: {data_path}")
-            else:
-                candidates = []
-                if EXTERNAL_DATA_DIR.exists():
-                    candidates.extend(list(EXTERNAL_DATA_DIR.glob("*.csv")))
-                candidates.extend(list(DATA_DIR.glob("*.csv")))
+            # Check D:\IoT_Data first, then local data/
+            candidates = []
+            if EXTERNAL_DATA_DIR.exists():
+                candidates.extend(list(EXTERNAL_DATA_DIR.glob("*.csv")))
+            candidates.extend(list(DATA_DIR.glob("*.csv")))
 
-                if candidates:
-                    data_path = str(candidates[0])
-                    print(f"[*] No --data specified. Defaulting to found dataset: {data_path}")
-                else:
-                    print(
-                        "[-] Error: No dataset CSV found in data/ or D:\\IoT_Data. "
-                        "Please specify the path using --data <path>."
-                    )
-                    sys.exit(1)
+            if candidates:
+                data_path = str(candidates[0])
+                print(f"[*] No --data specified. Defaulting to found dataset: {data_path}")
+            else:
+                print(
+                    "[-] Error: No dataset CSV found in D:\\IoT_Data or data/. "
+                    "Please specify the path using --data <path>."
+                )
+                sys.exit(1)
 
         train_iot_detector(
             dataset_path=data_path,
@@ -160,23 +160,70 @@ def main():
 
     if args.detect:
         input_path = args.input
-        if not input_path:
-            real_default = DATA_DIR / "real_ciciot_dataset.csv"
-            if real_default.exists():
-                input_path = str(real_default)
-                print(f"[*] No --input specified. Defaulting to real benchmark dataset: {input_path}")
-            else:
-                candidates = []
-                if EXTERNAL_DATA_DIR.exists():
-                    candidates.extend(list(EXTERNAL_DATA_DIR.glob("*.csv")))
-                candidates.extend(list(DATA_DIR.glob("*.csv")))
 
-                if candidates:
-                    input_path = str(candidates[0])
-                    print(f"[*] No --input specified. Defaulting to found dataset: {input_path}")
-                else:
-                    print("[-] Error: Please specify the traffic file to inspect using --input <path_to_csv>.")
-                    sys.exit(1)
+        # ── Interactive scenario menu ──────────────────────────────
+        RED    = "\033[91m"
+        GREEN  = "\033[92m"
+        YELLOW = "\033[93m"
+        CYAN   = "\033[96m"
+        BOLD   = "\033[1m"
+        RESET  = "\033[0m"
+
+        print("\n" + "=" * 55)
+        print(f"{BOLD}{CYAN}   IoT DEFENDER — SCENARIO SELECTION{RESET}")
+        print("=" * 55)
+        print("  Which attack scenario do you want to test?\n")
+        print(f"  {RED}{BOLD}1. SYN Flood Attack{RESET}       (DDoS — real dataset)")
+        print(f"  {GREEN}2. Normal Traffic Only{RESET}    (benign flows only)")
+        print(f"  {YELLOW}3. Mixed — Full Dataset{RESET}   (all 50,000 flows)")
+        print(f"  {CYAN}4. Custom input file{RESET}      (provide your own CSV)")
+        print("=" * 55)
+
+        choice = input("  Enter choice (1-4): ").strip()
+
+        real_csv   = str(DATA_DIR / "real_ciciot_dataset.csv")
+        benign_csv = str(DATA_DIR / "benign_only.csv")
+
+        if choice == "1":
+            print("\n[*] Scenario: SYN Flood Attack — loading attack flows only...")
+            import pandas as pd
+            df = pd.read_csv(real_csv, low_memory=False)
+            attack_df = df[df["label"] == "DDoS-SYN_Flood"]
+            tmp_path = str(DATA_DIR / "_tmp_attack_scenario.csv")
+            attack_df.to_csv(tmp_path, index=False)
+            input_path = tmp_path
+            print(f"[+] Loaded {len(attack_df):,} SYN Flood attack flows.")
+
+        elif choice == "2":
+            print("\n[*] Scenario: Normal Traffic Only — loading benign flows...")
+            import pandas as pd
+            df = pd.read_csv(real_csv, low_memory=False)
+            benign_df = df[df["label"] == "BenignTraffic"]
+            tmp_path = str(DATA_DIR / "_tmp_benign_scenario.csv")
+            benign_df.to_csv(tmp_path, index=False)
+            input_path = tmp_path
+            print(f"[+] Loaded {len(benign_df):,} benign flows.")
+
+        elif choice == "3":
+            print("\n[*] Scenario: Full Mixed Dataset — 50,000 flows...")
+            input_path = real_csv
+
+        elif choice == "4":
+            custom = input("  Enter path to your CSV file: ").strip()
+            if not Path(custom).exists():
+                print(f"[-] File not found: {custom}")
+                sys.exit(1)
+            input_path = custom
+            print(f"\n[*] Scenario: Custom file — {input_path}")
+
+        else:
+            print("[-] Invalid choice. Defaulting to full dataset.")
+            input_path = real_csv
+
+        if not input_path:
+            print("[-] Error: No input file found. Please specify with --input <path>.")
+            sys.exit(1)
+        # ───────────────────────────────────────────────────────────
 
         detector = IoTTrafficDetector(threshold=args.threshold)
         detector.detect_batch(traffic_data=input_path, save_report=True)
