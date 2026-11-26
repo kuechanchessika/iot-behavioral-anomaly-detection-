@@ -197,21 +197,24 @@ class IoTTrafficDetector:
 
         # Save audit logs
         if save_report:
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_csv = LOGS_DIR / f"detection_log_{timestamp}.csv"
-            combined = pd.concat([results, df_raw], axis=1)
-            combined.to_csv(report_csv, index=False)
-            print(f"[+] Full detection audit log saved to: {report_csv}")
+            try:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                report_csv = LOGS_DIR / f"detection_log_{timestamp}.csv"
+                combined = pd.concat([results, df_raw], axis=1)
+                combined.to_csv(report_csv, index=False)
+                print(f"[+] Full detection audit log saved to: {report_csv}")
 
-            # If threats were detected, save specific alert log for Layer 3 mitigation
-            if abnormal_count > 0:
-                alerts_csv = LOGS_DIR / f"alerts_{timestamp}.csv"
-                alerts = combined[combined["is_abnormal"] == 1]
-                alerts.to_csv(alerts_csv, index=False)
-                print(f"[!] Threat alerts isolated and logged to: {alerts_csv}")
+                # If threats were detected, save specific alert log for Layer 3 mitigation
+                if abnormal_count > 0:
+                    alerts_csv = LOGS_DIR / f"alerts_{timestamp}.csv"
+                    alerts = combined[combined["is_abnormal"] == 1]
+                    alerts.to_csv(alerts_csv, index=False)
+                    print(f"[!] Threat alerts isolated and logged to: {alerts_csv}")
+            except Exception as log_err:
+                print(f"[*] Audit log export skipped ({log_err})")
 
-                # Stage 7 & 8: Auto-trigger LLM analysis for CRITICAL threats (P >= tau_critical)
-                if trigger_llm:
+            # Stage 7 & 8: Auto-trigger LLM analysis for CRITICAL threats (P >= tau_critical)
+            if trigger_llm and abnormal_count > 0:
                     critical_alerts = results[results["risk_level"] == "CRITICAL"]
                     if not critical_alerts.empty:
                         top_threats = critical_alerts.nlargest(min(3, len(critical_alerts)), "anomaly_score")
