@@ -69,35 +69,50 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 
 # ═══════════════════════════════════════════════════════════
-#  PROMPT BUILDER
+#  PROMPT BUILDER (Stage 7 & 8: LLM Threat Analyst Agent)
 # ═══════════════════════════════════════════════════════════
 def _build_prompt(alert: dict) -> str:
-    """Convert Layer 2 alert dict into an LLM-ready prompt."""
+    """Convert Layer 2 alert dict (including Stage 1 sticky notes and ADWIN drift) into an LLM-ready prompt."""
+    is_inf = alert.get("is_inf_pkt_rate", 0)
+    is_nan_pld = alert.get("is_nan_payload", 0)
+    adwin_drift = alert.get("adwin_port_drift", 0.0)
+
+    sticky_info = []
+    if is_inf:
+        sticky_info.append("Zero-duration probe detected (flow_duration <= 5.12 us serialization delay bound)")
+    if is_nan_pld:
+        sticky_info.append("Zero-payload control probe detected (payload < 2B MQTT/app header)")
+    if adwin_drift > 0:
+        sticky_info.append(f"ADWIN adaptive port drift confirmed (D = {adwin_drift} > epsilon_cut hurdle)")
+    sticky_summary = "; ".join(sticky_info) if sticky_info else "None (standard flow parameters)"
+
     return f"""You are an expert IoT network security analyst for a Smart City intrusion detection system.
 
-Analyze this network traffic alert and write a concise threat report.
+Analyze this network traffic alert and write an actionable 5-part forensic threat report.
 IMPORTANT: Do NOT use markdown formatting. No **bold**, no ###headers, no bullet symbols. Plain text only.
 
 === ALERT DATA ===
-Source IP      : {alert.get('src_ip', 'N/A')}
-Destination IP : {alert.get('dst_ip', 'N/A')}
-Protocol       : {alert.get('protocol', 'N/A')}
-Threat Score   : {alert.get('threat_score', 'N/A')} (0.0=Normal, 1.0=Critical)
-Severity       : {alert.get('severity', 'N/A')}
-SYN Count      : {alert.get('syn_count', 'N/A')}
-ACK Count      : {alert.get('ack_count', 'N/A')}
-RST Count      : {alert.get('rst_count', 'N/A')}
-URG Count      : {alert.get('urg_count', 'N/A')}
-Flow Duration  : {alert.get('flow_duration', 'N/A')} seconds
-Packet Rate    : {alert.get('packet_rate', 'N/A')} pps
-Flows Analyzed : {alert.get('flow_count', 1)}
+Source IP          : {alert.get('src_ip', 'N/A')}
+Destination IP     : {alert.get('dst_ip', 'N/A')}
+Protocol           : {alert.get('protocol', 'N/A')}
+Threat Score       : {alert.get('threat_score', 'N/A')} (0.0=Normal, 1.0=Critical)
+Severity Tier      : {alert.get('severity', 'N/A')}
+SYN Count          : {alert.get('syn_count', 'N/A')}
+ACK Count          : {alert.get('ack_count', 'N/A')}
+RST Count          : {alert.get('rst_count', 'N/A')}
+URG Count          : {alert.get('urg_count', 'N/A')}
+Flow Duration      : {alert.get('flow_duration', 'N/A')} seconds
+Packet Rate        : {alert.get('packet_rate', 'N/A')} pps
+Sticky Note Flags  : {sticky_summary}
+ADWIN Port Drift   : {adwin_drift}
+Total Flows Flagged: {alert.get('flow_count', 1)}
 
-=== REPORT FORMAT (plain text, no markdown) ===
-1. ATTACK TYPE        : What attack is this?
-2. CONFIDENCE         : High / Medium / Low
-3. EXPLANATION        : Why do these flags/metrics indicate this attack? (2-3 sentences)
-4. IMPACT             : What damage could this do to Smart City IoT infrastructure?
-5. RECOMMENDED ACTION : Exact steps: block IP? rate-limit? alert operator? quarantine?
+=== 5-PART FORENSIC REPORT FORMAT (plain text only, no markdown) ===
+1. CLASSIFICATION         : Attack family and specific variant (e.g., DDoS SYN Flood, Mirai Telnet Brute, Recon PortScan)
+2. CONFIDENCE             : High / Medium / Low
+3. TECHNICAL ROOT-CAUSE   : Ground-truth explanation linking TCP flags, zero-duration/zero-payload sticky notes, and ADWIN port drift.
+4. OPERATIONAL IMPACT     : Specific physical impact on connected IoT infrastructure (e.g. municipal traffic controller fail-safe).
+5. RECOMMENDED ACTION     : Precise containment commands (e.g. iptables drop rule, Layer 3 quarantine, VLAN isolation).
 
 Write in plain text only. No asterisks, no hashtags, no bullet dashes.
 """
