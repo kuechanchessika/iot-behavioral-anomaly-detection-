@@ -27,7 +27,7 @@ This repository houses **Control 2 / Layer 2** of an integrated three-tier cyber
 │ - Stage 4: HistGradientBoosting with Early Stopping & Latency Cap (<= 181). │
 │ - Stage 5: Sigmoid Probability Scoring & Youden's J Calibration (tau*).     │
 │ - Stage 6: Calibrated Risk Triage (Normal, Medium, High, Critical).         │
-│ - Stage 7 & 8: LLM Threat Analyst Agent (DeepSeek-V3 Forensic Report).      │
+│ - Stage 7 & 8: LLM Threat Analyst Agent (DeepSeek Forensic Report).      │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ (Threat Alerts & Anomaly Scores)
                                        ▼
