@@ -271,20 +271,27 @@ def _colorize_analysis(text: str) -> str:
     """Apply color to each section of the LLM analysis output."""
     colored_lines = []
     line_colors = {
-        "1. ATTACK TYPE"        : C.RED    + C.BOLD,
-        "2. CONFIDENCE"         : C.YELLOW + C.BOLD,
-        "3. EXPLANATION"        : C.WHITE,
-        "4. IMPACT"             : C.YELLOW,
-        "5. RECOMMENDED ACTION" : C.GREEN  + C.BOLD,
+        "1. CLASSIFICATION"      : C.RED    + C.BOLD,
+        "1. ATTACK TYPE"         : C.RED    + C.BOLD,
+        "2. CONFIDENCE"          : C.YELLOW + C.BOLD,
+        "3. TECHNICAL ROOT-CAUSE": C.CYAN   + C.BOLD,
+        "3. EXPLANATION"         : C.CYAN   + C.BOLD,
+        "4. OPERATIONAL IMPACT"  : C.YELLOW + C.BOLD,
+        "4. IMPACT"              : C.YELLOW + C.BOLD,
+        "5. RECOMMENDED ACTION"  : C.GREEN  + C.BOLD,
     }
     for line in text.splitlines():
         colored = line
+        stripped = line.strip()
+        if stripped.startswith("[ERROR]"):
+            colored_lines.append(f"{C.RED}{C.BOLD}{line}{C.RESET}")
+            continue
         for key, color in line_colors.items():
-            if line.strip().startswith(key):
+            if stripped.upper().startswith(key):
                 # Color the label part, keep value white
                 parts = line.split(":", 1)
                 if len(parts) == 2:
-                    colored = f"{color}{parts[0]}:{C.RESET}{parts[1]}"
+                    colored = f"{color}{parts[0]}:{C.RESET}{C.WHITE}{parts[1]}{C.RESET}"
                 else:
                     colored = f"{color}{line}{C.RESET}"
                 break

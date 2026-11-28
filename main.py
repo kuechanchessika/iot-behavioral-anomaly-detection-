@@ -40,6 +40,8 @@ class C:
 # ═══════════════════════════════════════════════════════════════
 # BENCHMARK DATASET REGISTRY (Datasets A - E)
 # ═══════════════════════════════════════════════════════════════
+SIBLING_DATA_DIR = PROJECT_ROOT.parent / "Baby" / "AI defense" / "data"
+
 BENCHMARK_DATASETS: Dict[str, Dict[str, Union[str, list, Path]]] = {
     "A": {
         "letter": "A",
@@ -61,6 +63,8 @@ BENCHMARK_DATASETS: Dict[str, Dict[str, Union[str, list, Path]]] = {
         "spec": "CIC-IoT2023 Cloud, 3.0M",
         "candidate_files": [
             DATA_DIR / "ciciot2023_kaggle.csv",
+            DATA_DIR / "dataset_b_3m.csv",
+            SIBLING_DATA_DIR / "dataset_b_3m.csv",
             Path(r"D:\IoT_Data"),
             DATA_DIR / "real_ciciot_dataset.csv",
         ],
@@ -73,6 +77,7 @@ BENCHMARK_DATASETS: Dict[str, Dict[str, Union[str, list, Path]]] = {
         "spec": "Industrial SCADA, 1.2M",
         "candidate_files": [
             DATA_DIR / "wustl_iiot_2021.csv",
+            SIBLING_DATA_DIR / "wustl_iiot_2021.csv",
             Path(r"D:\Dataset\WUSTL"),
             Path(r"D:\WUSTL"),
             DATA_DIR / "real_ciciot_dataset.csv",
@@ -86,6 +91,8 @@ BENCHMARK_DATASETS: Dict[str, Dict[str, Union[str, list, Path]]] = {
         "spec": "Smart City Sensors, 2.87M",
         "candidate_files": [
             DATA_DIR / "unsw_ton_iot.csv",
+            DATA_DIR / "dataset_d_3m.csv",
+            PROJECT_ROOT.parent / "Processed_IoT_dataset",
             Path(r"D:\Dataset\ToN-IoT"),
             Path(r"D:\ToN-IoT"),
             DATA_DIR / "real_ciciot_dataset.csv",
@@ -99,6 +106,8 @@ BENCHMARK_DATASETS: Dict[str, Dict[str, Union[str, list, Path]]] = {
         "spec": "MQTT/CoAP/IIoT, 157.8K",
         "candidate_files": [
             DATA_DIR / "edge_iiotset.csv",
+            DATA_DIR / "edge_iiot_dataset.csv",
+            SIBLING_DATA_DIR / "edge_iiot_dataset.csv",
             Path(r"D:\Dataset\Edge-IIoTset dataset"),
             DATA_DIR / "real_ciciot_dataset.csv",
         ],
@@ -199,22 +208,59 @@ def run_benchmark_dataset_selection(
         print(f"[*] Using local benchmark file: {dataset_file}")
 
     if scenario_choice == "1":
-        print(f"\n[*] Scenario: Attack Traffic Only — filtering attacks from {active_target_name}...")
+        print("\n" + "=" * 70)
+        print(f"  {C.BOLD}{C.CYAN}SCENARIO 1 — SELECT SPECIFIC ATTACK TYPE ({active_target_name}){C.RESET}")
+        print("=" * 70)
+        print("  Which specific attack type do you want to test?\n")
+        print(f"  {C.RED}{C.BOLD}1. DDoS{C.RESET}              (test only DDoS attack flows)")
+        print(f"  {C.YELLOW}{C.BOLD}2. Port_Scanning{C.RESET}     (test only Port_Scanning attack flows)")
+        print(f"  {C.MAGENTA}{C.BOLD}3. SQL_Injection{C.RESET}     (test only SQL_Injection attack flows)")
+        print(f"  {C.CYAN}{C.BOLD}4. XSS{C.RESET}               (test only XSS attack flows)")
+        print(f"  {C.GREEN}{C.BOLD}5. All Attack Types{C.RESET}  (test all 4 attack types combined)")
+        print("=" * 70)
+
+        attack_choice = input("  Enter attack choice (1-5, default: 5): ").strip() or "5"
+        attack_filter_map = {
+            "1": ("DDoS", r"ddos|dos"),
+            "2": ("Port_Scanning", r"port_scan|portscan|recon|scan"),
+            "3": ("SQL_Injection", r"sql|injection"),
+            "4": ("XSS", r"xss"),
+        }
+
+        print(f"\n[*] Scenario: Attack Traffic Only — reading {active_target_name}...")
         df_raw = pd.read_csv(dataset_file, low_memory=False)
-        label_col = "label" if "label" in df_raw.columns else None
-        if not label_col:
+        label_col = None
+        for candidate in ["Attack_type", "type", "Traffic", "label"]:
             for c in df_raw.columns:
-                if c.lower() == "label":
+                if c.lower() == candidate.lower():
                     label_col = c
                     break
+            if label_col:
+                break
 
         if label_col:
-            is_attack = ~df_raw[label_col].astype(str).str.strip().str.lower().isin(BENIGN_LABELS)
-            df_traffic = df_raw[is_attack].copy()
+            lbl_series = df_raw[label_col].astype(str).str.strip()
+            is_attack = ~lbl_series.str.lower().isin(BENIGN_LABELS)
+            df_attacks = df_raw[is_attack].copy()
+
+            if attack_choice in attack_filter_map:
+                att_name, att_regex = attack_filter_map[attack_choice]
+                exact_mask = df_attacks[label_col].astype(str).str.strip().str.lower() == att_name.lower()
+                if exact_mask.any():
+                    df_traffic = df_attacks[exact_mask].copy()
+                else:
+                    regex_mask = df_attacks[label_col].astype(str).str.contains(att_regex, case=False, regex=True)
+                    df_traffic = df_attacks[regex_mask].copy()
+                input_desc = f"{att_name} Attack Flows Only ({len(df_traffic):,} records)"
+                print(f"[+] Filtered {len(df_traffic):,} '{att_name}' attack flows.")
+            else:
+                df_traffic = df_attacks
+                input_desc = f"All 4 Attack Types Combined ({len(df_traffic):,} records)"
+                print(f"[+] Loaded {len(df_traffic):,} total attack flows across all 4 types.")
         else:
             df_traffic = df_raw.copy()
-        input_desc = f"Attack Flows Only ({len(df_traffic):,} records)"
-        print(f"[+] Loaded {len(df_traffic):,} attack flows.")
+            input_desc = f"Attack Flows Only ({len(df_traffic):,} records)"
+            print(f"[+] Loaded {len(df_traffic):,} flows.")
 
     elif scenario_choice == "2":
         print(f"\n[*] Scenario: Normal Traffic Only — filtering benign baseline flows...")
@@ -358,8 +404,34 @@ def main():
         default=None,
         help="Filter traffic by TCP flag (e.g. 'syn', 'ack', 'rst', 'fin') for testing or detection"
     )
+    parser.add_argument(
+        "--labels",
+        type=str,
+        default=None,
+        help="Print ground-truth label counts for dataset A, B, C, D, E, or ALL"
+    )
 
     args = parser.parse_args()
+
+    if args.labels:
+        keys = ["A", "B", "C", "D", "E"] if args.labels.strip().upper() == "ALL" else [args.labels.strip().upper()]
+        for k in keys:
+            p, tname = resolve_dataset_path(k)
+            print("\n" + "=" * 65)
+            print(f"  {C.BOLD}{C.CYAN}{tname}{C.RESET}")
+            print(f"  File: {p}")
+            print("=" * 65)
+            if not p.exists():
+                print("  [-] Dataset file not found on this machine.")
+                continue
+            df_hdr = pd.read_csv(p, nrows=5, low_memory=False)
+            lcol = next((c for cand in ["Attack_type", "type", "Traffic", "label"] for c in df_hdr.columns if c.lower() == cand.lower()), None)
+            if not lcol:
+                print(f"  [-] No label column found in {list(df_hdr.columns)}")
+                continue
+            s = pd.read_csv(p, usecols=[lcol], low_memory=False)[lcol].value_counts()
+            print(s)
+        return
 
     # 1. If executed with NO arguments, launch the Benchmark Dataset Selection by default!
     if len(sys.argv) == 1:

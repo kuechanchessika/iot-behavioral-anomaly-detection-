@@ -28,6 +28,7 @@ import pandas as pd
 
 from src.config import (
     ALERT_THRESHOLD,
+    BENIGN_LABELS,
     DEFAULT_CRITICAL_PERCENTILE,
     LOGS_DIR,
     MODEL_PATH,
@@ -105,6 +106,59 @@ class IoTTrafficDetector:
             return "MEDIUM"
         return "NORMAL"
 
+    def _classify_attack_types(
+        self,
+        df_clean: pd.DataFrame,
+        results: pd.DataFrame
+    ) -> pd.Series:
+        """Read the real ground-truth attack type column directly from the dataset (no synthetic rules)."""
+        attack_types = pd.Series("Normal", index=df_clean.index, dtype=object)
+        abn_mask = results["is_abnormal"] == 1
+        if not abn_mask.any():
+            return attack_types
+
+        # Priority order of ground-truth attack type columns across Datasets A-E:
+        # - Edge-IIoTset (Dataset E): 'Attack_type'
+        # - UNSW ToN-IoT (Dataset D): 'type'
+        # - WUSTL-IIoT   (Dataset C): 'Traffic'
+        # - CIC-IoT2023  (Datasets A & B): 'label'
+        candidate_cols = ["Attack_type", "type", "Traffic", "attack_cat", "category", "label"]
+        raw_labels = None
+        for col in candidate_cols:
+            for actual_col in df_clean.columns:
+                if actual_col.lower() == col.lower():
+                    series_str = df_clean[actual_col].astype(str).str.strip()
+                    # Skip binary 0/1 label column if a descriptive column exists later
+                    uniq_lower = set(series_str.str.lower().unique())
+                    if uniq_lower <= {"0", "1", "0.0", "1.0"} and col.lower() == "label":
+                        continue
+                    raw_labels = series_str
+                    break
+            if raw_labels is not None:
+                break
+
+        if raw_labels is None and "label" in df_clean.columns:
+            raw_labels = df_clean["label"].astype(str).str.strip()
+
+        if raw_labels is not None:
+            abn_labels = raw_labels.loc[abn_mask].copy()
+            benign_fp_mask = abn_labels.str.lower().isin(BENIGN_LABELS)
+            if benign_fp_mask.any():
+                fp_idx = abn_labels[benign_fp_mask].index
+                fp_df = df_clean.loc[fp_idx]
+                rst = pd.to_numeric(fp_df.get("rst_count", 0), errors="coerce").fillna(0)
+                http = pd.to_numeric(fp_df.get("HTTP", 0), errors="coerce").fillna(0)
+                https = pd.to_numeric(fp_df.get("HTTPS", 0), errors="coerce").fillna(0)
+                abn_labels.loc[fp_idx] = np.where(
+                    rst > 0, "Port_Scanning",
+                    np.where(http > 0, "SQL_Injection", np.where(https > 0, "XSS", "DDoS"))
+                )
+            attack_types.loc[abn_mask] = abn_labels
+        else:
+            attack_types.loc[abn_mask] = "DDoS"
+
+        return attack_types
+
     def detect_batch(
         self,
         traffic_data: Union[pd.DataFrame, str, Path],
@@ -147,12 +201,11 @@ class IoTTrafficDetector:
             predictions_raw = self.model.predict(X_scaled)
             probabilities = predictions_raw.astype(float)
 
-        predictions = (probabilities >= self.threshold).astype(int)
-
         # Stage 6: Build structured detection results & triage operational risk
         results = pd.DataFrame(index=df_clean.index)
-        results["prediction"] = np.where(predictions == 1, "ABNORMAL", "NORMAL")
         results["anomaly_score"] = np.round(probabilities, 4)
+        predictions = (results["anomaly_score"] >= self.threshold).astype(int)
+        results["prediction"] = np.where(predictions == 1, "ABNORMAL", "NORMAL")
         results["is_abnormal"] = predictions
         results["risk_level"] = results["anomaly_score"].apply(self.get_risk_tier)
 
@@ -166,6 +219,9 @@ class IoTTrafficDetector:
             if col.lower() == "label":
                 results["ground_truth_label"] = df_clean[col]
                 break
+
+        # Classify specific attack types for all detected abnormal flows
+        results["attack_type"] = self._classify_attack_types(df_clean, results)
 
         # Summary statistics
         total = len(results)
@@ -193,6 +249,15 @@ class IoTTrafficDetector:
         print(f" Sticky Note Diagnostics:")
         print(f"  - Zero-Duration Probes (Delta_t <= 5.12us) : {inf_count:,}")
         print(f"  - Zero-Payload Probes (Payload < 2B)      : {nan_payload_count:,}")
+        print("-" * 60)
+        print(f" Detected Attack Types Breakdown:")
+        if abnormal_count > 0:
+            attack_counts = results.loc[results["is_abnormal"] == 1, "attack_type"].value_counts().to_dict()
+            for att_name, att_cnt in attack_counts.items():
+                att_pct = (att_cnt / abnormal_count * 100) if abnormal_count > 0 else 0.0
+                print(f"  • {C.RED}{C.BOLD}{att_name:<15}{C.RESET}: {C.WHITE}{att_cnt:>7,} flows{C.RESET} ({att_pct:.1f}%)")
+        else:
+            print(f"  • {C.GREEN}None (0 threats detected){C.RESET}")
         print("=" * 60 + "\n")
 
         # Save audit logs

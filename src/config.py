@@ -111,7 +111,7 @@ T_LATENCY_CAP = int(TAU_BUDGET_US // T_TREE_COST_US)  # 181 trees ceiling
 EARLY_STOPPING_PATIENCE = 10         # Consecutive trees without improvement
 EARLY_STOPPING_TOLERANCE = 1.0e-4    # epsilon_loss = 1e-4
 BOOSTING_LEARNING_RATE = 0.10        # Shrinkage eta = 0.10
-HISTOGRAM_BINS = 256                 # Discretization bins B = 256
+HISTOGRAM_BINS = 255                 # Discretization bins B = 255 (+1 missing-value bin = 256 uint8 slots)
 
 # ── Cluster 5: Decision Threshold Calibration (Stage 5) ──
 # Default fallback; calibrated dynamically on validation ROC via Youden's J statistic

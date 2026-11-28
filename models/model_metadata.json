@@ -1,6 +1,19 @@
 {
     "model_type": "hist_gb",
-    "trained_at": "2026-10-26T00:03:45.469488",
+    "scaling_method": "robust_mad",
+    "fitted_trees": 117,
+    "latency_budget_cap": 181,
+    "calibration": {
+        "tau_optimal": 0.5675,
+        "tau_youden": 0.5675,
+        "tau_cost_sensitive": 0.1036,
+        "youden_j_max": 0.9371,
+        "sigma_cal": 0.4646,
+        "medium_upper_boundary": 0.949,
+        "tau_critical_llm": 0.999,
+        "llm_quota_beta": 0.002
+    },
+    "trained_at": "2026-11-28T14:18:55.823405",
     "num_features": 46,
     "features": [
         "flow_duration",
@@ -51,17 +64,18 @@
         "Weight"
     ],
     "metrics": {
-        "accuracy": 0.9844621195467536,
-        "precision": 0.998893436899045,
-        "recall": 0.9765827272011134,
-        "f1_score": 0.9876120952686968,
-        "false_alarm_rate": 0.0018758138391353045,
-        "roc_auc": 0.9963203662873167,
+        "threshold_used": 0.5675,
+        "accuracy": 0.9673,
+        "precision": 0.9824800136077564,
+        "recall": 0.9626666666666667,
+        "f1_score": 0.9724724303392541,
+        "false_alarm_rate": 0.02575,
+        "roc_auc": 0.9950725,
         "confusion_matrix": {
-            "true_negatives_normal": 219226,
-            "false_positives_false_alarm": 412,
-            "false_negatives_missed_attack": 8918,
-            "true_positives_detected_attack": 371912
+            "true_negatives_normal": 3897,
+            "false_positives_false_alarm": 103,
+            "false_negatives_missed_attack": 224,
+            "true_positives_detected_attack": 5776
         }
     }
 }
