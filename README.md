@@ -14,20 +14,20 @@ This repository houses **Control 2 / Layer 2** of an integrated three-tier cyber
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Layer 1: Cryptographic Authentication                                      │
+│ Layer 1: Cryptographic Authentication                                       │
 │ - Verifies device identity, certificates, and token signatures.             │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ (Authenticated Network Traffic)
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Layer 2: AI-Based Behavioral Anomaly Detection (THIS MODULE)                 │
+│ Layer 2: AI-Based Behavioral Anomaly Detection (THIS MODULE)                │
 │ - Stage 1: Sticky Notes (is_inf_pkt_rate, is_nan_payload) + ADWIN Drift.    │
-│ - Stage 2: Median Imputation without erasing heuristic flags.              │
+│ - Stage 2: Median Imputation without erasing heuristic flags.               │
 │ - Stage 3: Robust MAD Scaling & Chebyshev Outlier Clipping (k ~ 31.62).     │
 │ - Stage 4: HistGradientBoosting with Early Stopping & Latency Cap (<= 181). │
 │ - Stage 5: Sigmoid Probability Scoring & Youden's J Calibration (tau*).     │
 │ - Stage 6: Calibrated Risk Triage (Normal, Medium, High, Critical).         │
-│ - Stage 7 & 8: LLM Threat Analyst Agent (DeepSeek Forensic Report).      │
+│ - Stage 7 & 8: LLM Threat Analyst Agent (DeepSeek Forensic Report).         │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ (Threat Alerts & Anomaly Scores)
                                        ▼
