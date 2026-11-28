@@ -1,4 +1,4 @@
-# Layer 2: AI-Powered IoT Behavioral Anomaly Detection Engine
+# Control 2: AI-Powered IoT Behavioral Anomaly Detection Engine
 
 **Research Project:** A Cross-Protocol Anomaly Detection Framework for Connected IoT Infrastructure: Mitigating Cyber-Physical Attacks on Smart Traffic and Municipal Systems  
 **Institution:** Concordia University  
