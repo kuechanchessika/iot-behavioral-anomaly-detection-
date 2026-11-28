@@ -10,7 +10,7 @@
 
 ## 1. Project Context & The Three-Layer Security Framework
 
-This repository houses **Control 2 / Layer 2** of an integrated three-tier cybersecurity architecture designed to protect smart traffic intersections, SCADA telemetry, and connected municipal IoT infrastructure:
+This repository houses **Control 2** of an integrated three-tier cybersecurity architecture designed to protect smart traffic intersections, SCADA telemetry, and connected municipal IoT infrastructure:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
